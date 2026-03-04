@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>♞ Blue Horse — Lichess Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#06080f; --bg2:#0d1117; --bg3:#151b28; --bg4:#1c2436;
+    --border:rgba(255,255,255,0.05); --gold:#f6c744; --gold2:#e5a808;
+    --blue:#4a90e2; --green:#34d399; --red:#f87171; --orange:#fb923c;
+    --purple:#a78bfa; --teal:#2dd4bf; --text:#e1e7ef; --dim:#6b7a90; --muted:#3d4a5c;
+    --radius:16px; --font:'DM Sans',system-ui,sans-serif; --mono:'JetBrains Mono','Fira Code',monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;}
+
+  .header{background:linear-gradient(180deg,#0f1520,#0a0d14);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;}
+  .header-inner{max-width:1100px;margin:0 auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:62px;}
+  .logo{display:flex;align-items:center;gap:12px;}
+  .logo-badge{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--gold),var(--gold2));display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 2px 12px rgba(246,199,68,0.2);}
+  .logo h1{font-size:15px;font-weight:800;color:#fff;letter-spacing:.3px;}
+  .logo span{font-size:10px;color:var(--gold);font-weight:600;display:block;margin-top:1px;}
+  .tabs{display:flex;gap:3px;background:var(--bg3);border-radius:10px;padding:3px;}
+  .tab{padding:7px 18px;border-radius:8px;border:none;cursor:pointer;font:600 12px var(--font);color:var(--dim);background:transparent;transition:all .2s;}
+  .tab:hover{color:var(--text);} .tab.active{background:var(--gold);color:#0a0d14;}
+  .tab .badge{display:inline-block;background:rgba(255,255,255,.1);padding:1px 6px;border-radius:5px;font-size:10px;margin-left:4px;}
+  .tab.active .badge{background:rgba(0,0,0,.15);}
+
+  .main{max-width:1100px;margin:0 auto;padding:28px 24px;}
+  .hidden{display:none!important;}
+
+  /* Warning banner */
+  .warn-banner{background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.2);border-radius:14px;padding:20px 24px;margin-bottom:24px;display:flex;align-items:flex-start;gap:14px;}
+  .warn-banner .wi{font-size:28px;flex-shrink:0;}
+  .warn-banner h3{font-size:14px;color:var(--gold);font-weight:700;margin-bottom:6px;}
+  .warn-banner p{font-size:12px;color:var(--dim);line-height:1.7;}
+  .warn-banner code{background:rgba(255,255,255,.06);padding:2px 8px;border-radius:5px;font:500 11px var(--mono);color:var(--text);}
+  .conn-ok{background:rgba(52,211,153,.06);border-color:rgba(52,211,153,.15);}
+  .conn-ok h3{color:var(--green);}
+
+  .search-box{background:var(--bg2);border-radius:var(--radius);padding:24px;border:1px solid var(--border);margin-bottom:28px;box-shadow:0 4px 24px rgba(0,0,0,.2);}
+  .search-label{font-size:13px;color:var(--dim);margin-bottom:10px;font-weight:500;}
+  .search-row{display:flex;gap:10px;}
+  .search-input{flex:1;padding:14px 18px;border-radius:12px;border:2px solid var(--bg4);background:var(--bg3);color:#fff;font:600 16px var(--mono);outline:none;transition:border-color .2s;}
+  .search-input:focus{border-color:var(--gold);}
+  .search-input::placeholder{color:var(--muted);font-weight:400;}
+  .btn-search{padding:14px 36px;border-radius:12px;border:none;background:linear-gradient(135deg,var(--gold),var(--orange));color:#0a0d14;font:700 15px var(--font);cursor:pointer;transition:all .15s;white-space:nowrap;}
+  .btn-search:hover{transform:translateY(-1px);box-shadow:0 4px 20px rgba(246,199,68,.25);}
+  .btn-search:disabled{opacity:.5;transform:none;box-shadow:none;cursor:wait;}
+
+  .status{margin-top:12px;padding:10px 16px;border-radius:10px;font-size:12px;display:flex;align-items:center;gap:10px;}
+  .status.info{background:rgba(246,199,68,.06);color:var(--gold);}
+  .status.error{background:rgba(248,113,113,.08);color:var(--red);}
+
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .spinner{width:14px;height:14px;border-radius:50%;border:2px solid rgba(246,199,68,.15);border-top-color:var(--gold);animation:spin .6s linear infinite;flex-shrink:0;}
+
+  .profile{background:var(--bg2);border-radius:var(--radius);padding:18px 24px;border:1px solid var(--border);margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;}
+  .profile-left{display:flex;align-items:center;gap:16px;}
+  .avatar{width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,var(--gold),var(--orange));display:flex;align-items:center;justify-content:center;font:800 24px var(--font);color:#0a0d14;box-shadow:0 2px 12px rgba(246,199,68,.15);}
+  .profile-name{font:800 24px var(--font);color:#fff;}
+  .profile-meta{font-size:12px;color:var(--dim);margin-top:2px;}
+  .dot-online{color:var(--green);} .dot-offline{color:var(--muted);}
+  .btn-link{padding:8px 18px;border-radius:10px;border:1px solid rgba(246,199,68,.15);background:rgba(246,199,68,.06);color:var(--gold);text-decoration:none;font:600 12px var(--font);transition:all .15s;}
+  .btn-link:hover{background:rgba(246,199,68,.12);}
+
+  .cards{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  @media(max-width:720px){.cards{grid-template-columns:1fr;}}
+  .card{background:#fff;border-radius:var(--radius);padding:22px;box-shadow:0 2px 20px rgba(0,0,0,.06);border-top:4px solid var(--card-clr);transition:transform .15s;}
+  .card:hover{transform:translateY(-2px);}
+  .card-head{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+  .card-icon{font-size:22px;} .card-title{font:700 14px var(--font);color:#1a2744;}
+  .card-elo{font:800 44px var(--mono);line-height:1;margin-bottom:4px;}
+  .card-elo-sub{font-size:12px;color:#94a3b8;margin-bottom:6px;}
+  .elo-prog{font:700 12px var(--mono);margin-left:8px;}
+  .elo-prog.up{color:#16a34a;} .elo-prog.down{color:#dc2626;}
+  .card-boxes{display:grid;gap:6px;margin-top:14px;}
+  .card-boxes.b4{grid-template-columns:1fr 1fr 1fr 1fr;}
+  .card-boxes.b3{grid-template-columns:1fr 1fr 1fr;}
+  .box{border-radius:10px;padding:10px 6px;text-align:center;}
+  .box-val{font:700 20px var(--mono);} .box-lbl{font-size:10px;color:#64748b;margin-top:2px;}
+  .note{text-align:center;margin-top:20px;font-size:12px;color:var(--muted);}
+
+  .empty{text-align:center;padding:70px 20px;}
+  .empty-icon{font-size:52px;margin-bottom:16px;}
+  .empty h3{font-size:16px;font-weight:500;color:var(--dim);}
+  .empty p{font-size:13px;color:var(--muted);margin-top:8px;}
+
+  .hist-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;}
+  .hist-title{font:700 16px var(--font);color:#fff;}
+  .hist-actions{display:flex;gap:8px;}
+  .btn-sm{padding:8px 16px;border-radius:8px;font:600 12px var(--font);cursor:pointer;border:1px solid;transition:all .15s;}
+  .btn-csv{background:rgba(34,197,94,.06);border-color:rgba(34,197,94,.2);color:var(--green);}
+  .btn-csv:hover{background:rgba(34,197,94,.12);}
+  .btn-clear{background:rgba(248,113,113,.06);border-color:rgba(248,113,113,.15);color:var(--red);}
+  .btn-clear:hover{background:rgba(248,113,113,.12);}
+
+  .hist-item{background:var(--bg2);border-radius:14px;padding:18px 20px;border:1px solid var(--border);margin-bottom:10px;transition:background .15s;}
+  .hist-item:hover{background:var(--bg3);}
+  .hist-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px;}
+  .hist-user{font:800 17px var(--mono);color:var(--gold);text-decoration:none;}
+  .hist-user:hover{text-decoration:underline;}
+  .hist-time{font-size:10px;color:var(--muted);margin-left:8px;}
+  .btn-remove{background:none;border:none;color:rgba(248,113,113,.3);cursor:pointer;font-size:18px;padding:4px 8px;border-radius:6px;}
+  .btn-remove:hover{color:var(--red);background:rgba(248,113,113,.08);}
+  .hist-stats{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;}
+  @media(max-width:720px){.hist-stats{grid-template-columns:repeat(3,1fr);}}
+  .mini{background:var(--bg3);border-radius:10px;padding:10px 12px;border-left:3px solid;}
+  .mini-lbl{font-size:9px;color:var(--muted);margin-bottom:2px;}
+  .mini-val{font:700 20px var(--mono);}
+  .mini-detail{font-size:9px;color:var(--muted);margin-top:2px;}
+
+  .table-wrap{overflow-x:auto;border-radius:12px;border:1px solid var(--border);margin-top:16px;}
+  table{width:100%;border-collapse:collapse;font-size:11px;}
+  thead tr{background:#1a2744;}
+  th{padding:10px 8px;color:#fff;font-weight:600;text-align:center;white-space:nowrap;}
+  td{padding:10px 8px;text-align:center;border-top:1px solid var(--border);}
+  tbody tr:nth-child(odd){background:rgba(255,255,255,.015);}
+  tbody tr:nth-child(even){background:rgba(255,255,255,.035);}
+  .td-user{color:var(--gold);font-weight:700;font-family:var(--mono);}
+  .td-rapid{color:var(--blue);font-weight:700;} .td-blitz{color:var(--orange);font-weight:700;}
+  .td-bullet{color:var(--red);font-weight:700;} .td-puzzle{color:var(--purple);font-weight:700;}
+  .td-storm{color:var(--teal);font-weight:700;} .td-dim{color:var(--dim);font-size:10px;}
+
+  .view-toggle{display:flex;gap:3px;background:var(--bg3);border-radius:8px;padding:3px;}
+  .view-btn{padding:5px 14px;border-radius:6px;border:none;cursor:pointer;font:500 11px var(--font);color:var(--dim);background:transparent;}
+  .view-btn.active{background:rgba(255,255,255,.08);color:var(--text);}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <div class="logo">
+      <div class="logo-badge">♞</div>
+      <div><h1>BLUE HORSE CHESS CLUB</h1><span>Kiểm tra dữ liệu Lichess học sinh</span></div>
+    </div>
+    <div class="tabs">
+      <button class="tab active" data-tab="search" onclick="switchTab('search')">🔍 Tra cứu</button>
+      <button class="tab" data-tab="history" onclick="switchTab('history')">📋 Lịch sử <span class="badge" id="hBadge">0</span></button>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+  <!-- Connection banner -->
+  <div id="connBanner"></div>
+
+  <!-- SEARCH TAB -->
+  <div id="tab-search">
+    <div class="search-box">
+      <div class="search-label">Nhập username Lichess của học sinh</div>
+      <div class="search-row">
+        <input class="search-input" id="inp" placeholder="Ví dụ: Bhhao" autofocus>
+        <button class="btn-search" id="btnSearch" onclick="doSearch()">Tìm kiếm</button>
+      </div>
+      <div id="statusBox"></div>
+    </div>
+    <div id="resultBox"></div>
+    <div id="emptyBox" class="empty">
+      <div class="empty-icon">♟️</div>
+      <h3>Nhập username Lichess để tra cứu</h3>
+      <p>Gọi trực tiếp API Lichess.org · Dữ liệu chính xác 100%</p>
+    </div>
+  </div>
+
+  <!-- HISTORY TAB -->
+  <div id="tab-history" class="hidden">
+    <div class="hist-header">
+      <div class="hist-title">📋 Lịch sử tìm kiếm (<span id="hTotal">0</span>)</div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <div class="view-toggle">
+          <button class="view-btn active" onclick="setView('card',this)">Thẻ</button>
+          <button class="view-btn" onclick="setView('table',this)">Bảng</button>
+        </div>
+        <div class="hist-actions">
+          <button class="btn-sm btn-csv" onclick="exportCSV()">📥 CSV</button>
+          <button class="btn-sm btn-clear" onclick="clearAll()">🗑 Xóa</button>
+        </div>
+      </div>
+    </div>
+    <div id="histCards"></div>
+    <div id="histTable" class="hidden"></div>
+    <div id="histEmpty" class="empty hidden"><div class="empty-icon">📭</div><h3>Chưa có lịch sử</h3></div>
+  </div>
+</div>
+
+<script>
+const API = 'https://lichess.org/api/user';
+let history = [];
+let currentView = 'card';
+
+// Load history
+try { history = JSON.parse(localStorage.getItem('bh_lichess') || '[]'); } catch(e) { history = []; }
+updateBadge();
+
+// ===== CONNECTION TEST ON LOAD =====
+(async function testConnection() {
+  const banner = document.getElementById('connBanner');
+
+  // Check if running in sandbox/iframe
+  const inIframe = (window !== window.top);
+  const isFile = location.protocol === 'file:';
+  const isHttp = location.protocol.startsWith('http');
+
+  if (inIframe) {
+    banner.innerHTML = `<div class="warn-banner">
+      <div class="wi">⚠️</div>
+      <div>
+        <h3>File đang chạy trong iframe / preview</h3>
+        <p>File này cần mở <b>trực tiếp bằng trình duyệt</b> để hoạt động:<br><br>
+        <b>Trên máy tính:</b> Tải file về → Click đúp vào file → Mở bằng Chrome/Edge<br>
+        <b>Trên iPhone:</b> Tải file → Mở app <code>Files</code> → Bấm vào file<br>
+        <b>Trên Android:</b> Tải file → Mở bằng Chrome<br><br>
+        ❌ KHÔNG mở bằng preview/iframe trong Claude hay Zalo</p>
+      </div>
+    </div>`;
+    return;
+  }
+
+  // Try to ping Lichess
+  try {
+    const r = await fetch('https://lichess.org/api/user/lichess', {
+      headers: { Accept: 'application/json' },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (r.ok) {
+      banner.innerHTML = `<div class="warn-banner conn-ok">
+        <div class="wi">✅</div>
+        <div>
+          <h3>Kết nối Lichess thành công!</h3>
+          <p>Sẵn sàng tra cứu. Nhập username và bấm Tìm kiếm.</p>
+        </div>
+      </div>`;
+      setTimeout(() => { banner.innerHTML = ''; }, 4000);
+    } else {
+      throw new Error('Status ' + r.status);
+    }
+  } catch (err) {
+    banner.innerHTML = `<div class="warn-banner">
+      <div class="wi">⚠️</div>
+      <div>
+        <h3>Không kết nối được Lichess API</h3>
+        <p>Lỗi: <code>${err.message}</code><br><br>
+        Nguyên nhân có thể:<br>
+        • Máy tính chưa có mạng internet<br>
+        • Mạng công ty/trường học chặn lichess.org<br>
+        • File đang mở trong preview (không phải trình duyệt)<br><br>
+        Thử: Mở <a href="https://lichess.org" target="_blank" style="color:var(--gold)">lichess.org</a> trong tab mới xem có truy cập được không.</p>
+      </div>
+    </div>`;
+  }
+})();
+
+// ===== TAB =====
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  document.getElementById('tab-search').classList.toggle('hidden', tab !== 'search');
+  document.getElementById('tab-history').classList.toggle('hidden', tab !== 'history');
+  if (tab === 'history') renderHistory();
+}
+function updateBadge() {
+  document.getElementById('hBadge').textContent = history.length;
+  document.getElementById('hTotal').textContent = history.length;
+}
+
+// ===== SEARCH =====
+document.getElementById('inp').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
+
+async function doSearch() {
+  const u = document.getElementById('inp').value.trim();
+  if (!u) return;
+  const btn = document.getElementById('btnSearch');
+  btn.disabled = true; btn.textContent = '⏳ Đang tải...';
+  document.getElementById('resultBox').innerHTML = '';
+  document.getElementById('emptyBox').classList.add('hidden');
+  showStatus('info', 'Đang kết nối lichess.org/api/user/' + u + ' ...');
+
+  try {
+    // Main profile
+    const r1 = await fetch(`${API}/${u}`, {
+      headers: { Accept: 'application/json' },
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!r1.ok) {
+      if (r1.status === 404) throw new Error(`Không tìm thấy username "${u}" trên Lichess`);
+      if (r1.status === 429) throw new Error('Lichess giới hạn truy cập (429). Đợi 1 phút rồi thử lại.');
+      throw new Error(`Lichess API trả về lỗi ${r1.status}`);
+    }
+    const user = await r1.json();
+    showStatus('info', 'Đang tải chi tiết Rapid / Blitz / Bullet / Classical...');
+
+    // Detailed stats
+    const perfs = await Promise.all(
+      ['rapid','blitz','bullet','classical'].map(p =>
+        fetch(`${API}/${u}/perf/${p}`, {
+          headers: { Accept: 'application/json' },
+          signal: AbortSignal.timeout(10000),
+        }).then(r => r.ok ? r.json() : null).catch(() => null)
+      )
+    );
+
+    const ext = (key, detail) => {
+      const p = user.perfs?.[key] || {};
+      const c = detail?.stat?.count || {};
+      return { rating:p.rating||0, rd:p.rd||0, prog:p.prog||0, games:p.games||0, win:c.win||0, loss:c.loss||0, draw:c.draw||0 };
+    };
+
+    const data = {
+      id: Date.now(), username: user.username,
+      online: user.online||false, playTime: user.playTime?.total||0,
+      seenAt: user.seenAt||null,
+      rapid: ext('rapid', perfs[0]), blitz: ext('blitz', perfs[1]), bullet: ext('bullet', perfs[2]),
+      classical: ext('classical', perfs[3]),
+      puzzle: { rating:user.perfs?.puzzle?.rating||0, games:user.perfs?.puzzle?.games||0, prog:user.perfs?.puzzle?.prog||0 },
+      storm: { score:user.perfs?.storm?.score||0, runs:user.perfs?.storm?.runs||0 },
+      fetchedAt: new Date().toISOString(),
+    };
+
+    hideStatus();
+    renderResult(data);
+    history.unshift(data);
+    saveHistory(); updateBadge();
+
+  } catch (err) {
+    let msg = err.message;
+    if (err.name === 'AbortError' || msg.includes('timeout')) msg = 'Quá thời gian chờ. Kiểm tra mạng và thử lại.';
+    if (msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('fetch')) {
+      msg = 'Không kết nối được Lichess. Kiểm tra: (1) Mạng internet (2) File phải mở bằng trình duyệt Chrome/Edge, KHÔNG mở trong preview Claude.';
+    }
+    showStatus('error', '⚠️ ' + msg);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Tìm kiếm';
+  }
+}
+
+function showStatus(type, msg) {
+  document.getElementById('statusBox').innerHTML = `<div class="status ${type}">${type==='info'?'<div class="spinner"></div>':''} ${msg}</div>`;
+}
+function hideStatus() { document.getElementById('statusBox').innerHTML = ''; }
+
+// ===== GLOBAL HELPERS =====
+function fSeen(ts) {
+  if (!ts) return 'Không rõ';
+  const d = new Date(ts);
+  const now = new Date();
+  const diff = Math.floor((now - d) / 1000);
+  if (diff < 60) return 'Vừa mới';
+  if (diff < 3600) return Math.floor(diff/60) + ' phút trước';
+  if (diff < 86400) return Math.floor(diff/3600) + ' giờ trước';
+  if (diff < 604800) return Math.floor(diff/86400) + ' ngày trước';
+  return d.toLocaleDateString('vi-VN');
+}
+
+// ===== RENDER RESULT =====
+function renderResult(d) {
+  const ft = s => s ? `${Math.floor(s/3600)}h ${Math.floor((s%3600)/60)}m` : '—';
+  const fd = iso => new Date(iso).toLocaleString('vi-VN');
+  const pr = v => v>0?`<span class="elo-prog up">▲${v}</span>`:v<0?`<span class="elo-prog down">▼${Math.abs(v)}</span>`:'';
+
+  const card = (title,icon,color,p,isPuzzle) => {
+    const boxes = isPuzzle ? `
+      <div class="card-boxes b3">
+        <div class="box" style="background:#f0f4ff"><div class="box-val" style="color:#3b5bdb">${p.puzzleGames}</div><div class="box-lbl">Câu đố</div></div>
+        <div class="box" style="background:#fff8e1"><div class="box-val" style="color:#e65100">${p.stormScore}</div><div class="box-lbl">Storm Max</div></div>
+        <div class="box" style="background:#e8f5e9"><div class="box-val" style="color:#2e7d32">${p.stormRuns}</div><div class="box-lbl">Storm Lần</div></div>
+      </div>` : `
+      <div class="card-boxes b4">
+        <div class="box" style="background:#eff6ff"><div class="box-val" style="color:#2563eb">${p.games}</div><div class="box-lbl">Số ván</div></div>
+        <div class="box" style="background:#f0fdf4"><div class="box-val" style="color:#16a34a">${p.win}</div><div class="box-lbl">Thắng</div></div>
+        <div class="box" style="background:#fef2f2"><div class="box-val" style="color:#dc2626">${p.loss}</div><div class="box-lbl">Thua</div></div>
+        <div class="box" style="background:#fffbeb"><div class="box-val" style="color:#d97706">${p.draw}</div><div class="box-lbl">Hòa</div></div>
+      </div>`;
+    return `<div class="card" style="--card-clr:${color}">
+      <div class="card-head"><span class="card-icon">${icon}</span><span class="card-title">${title}</span></div>
+      <div class="card-elo" style="color:${color}">${p.rating||'—'} ${pr(p.prog||0)}</div>
+      <div class="card-elo-sub">Elo${p.rd?' · RD: '+p.rd:''}</div>${boxes}</div>`;
+  };
+
+  document.getElementById('resultBox').innerHTML = `
+    <div class="profile">
+      <div class="profile-left">
+        <div class="avatar">${d.username[0].toUpperCase()}</div>
+        <div>
+          <div class="profile-name">${d.username}</div>
+          <div class="profile-meta">
+            <span class="${d.online?'dot-online':'dot-offline'}">● ${d.online?'Online':'Offline'}</span>
+            · Online gần nhất: ${d.online?'Đang online':fSeen(d.seenAt)}
+            · Thời gian chơi: ${ft(d.playTime)} · ${fd(d.fetchedAt)}
+          </div>
+        </div>
+      </div>
+      <a href="https://lichess.org/@/${d.username}" target="_blank" class="btn-link">Mở Lichess ↗</a>
+    </div>
+    <div class="cards">
+      ${card('Cờ nhanh (Rapid)','🕐','#4a90e2',d.rapid)}
+      ${card('Cờ chớp (Blitz)','⚡','#fb923c',d.blitz)}
+      ${card('Cờ siêu chớp (Bullet)','🚀','#f87171',d.bullet)}
+      ${card('Cờ chậm (Classical)','🏛️','#2dd4bf',d.classical)}
+      ${card('Puzzle & Storm','🧩','#a78bfa',{rating:d.puzzle.rating,prog:d.puzzle.prog,puzzleGames:d.puzzle.games,stormScore:d.storm.score,stormRuns:d.storm.runs},true)}
+    </div>
+    <div class="note">✅ Đã lưu vào Lịch sử · Dữ liệu 100% chính xác từ Lichess API</div>`;
+}
+
+// ===== HISTORY =====
+function saveHistory(){localStorage.setItem('bh_lichess',JSON.stringify(history));}
+function setView(v,btn){currentView=v;document.querySelectorAll('.view-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderHistory();}
+
+function renderHistory() {
+  updateBadge();
+  const cards=document.getElementById('histCards'), table=document.getElementById('histTable'), empty=document.getElementById('histEmpty');
+  if(!history.length){cards.innerHTML='';table.innerHTML='';empty.classList.remove('hidden');return;}
+  empty.classList.add('hidden');
+  const fd=iso=>new Date(iso).toLocaleString('vi-VN');
+
+  if(currentView==='card'){
+    cards.classList.remove('hidden');table.classList.add('hidden');
+    cards.innerHTML=history.map((h,i)=>`
+      <div class="hist-item">
+        <div class="hist-head">
+          <div>
+            <a href="https://lichess.org/@/${h.username}" target="_blank" class="hist-user">${h.username}</a>
+            <span class="hist-time">${fd(h.fetchedAt)} · Online: ${h.online?'Đang online':fSeen(h.seenAt)}</span>
+          </div>
+          <button class="btn-remove" onclick="removeEntry(${i})">✕</button>
+        </div>
+        <div class="hist-stats">
+          ${mini('Rapid',h.rapid,'#4a90e2')}${mini('Blitz',h.blitz,'#fb923c')}${mini('Bullet',h.bullet,'#f87171')}
+          ${mini('Classical',h.classical,'#2dd4bf')}
+          ${miniP('Puzzle',h.puzzle?.rating,h.puzzle?.games+' đố','#a78bfa')}
+          ${miniP('Storm',h.storm?.score,h.storm?.runs+' lần','#2dd4bf')}
+        </div>
+      </div>`).join('');
+  } else {
+    cards.classList.add('hidden');table.classList.remove('hidden');
+    table.innerHTML=`<div class="table-wrap"><table>
+      <thead><tr>
+        <th>Thời gian</th><th>Username</th><th>Online gần nhất</th>
+        <th>Rapid</th><th>R.Ván</th><th>R.W/L/D</th>
+        <th>Blitz</th><th>B.Ván</th><th>B.W/L/D</th>
+        <th>Bullet</th><th>Bu.Ván</th><th>Bu.W/L/D</th>
+        <th>Classical</th><th>C.Ván</th><th>C.W/L/D</th>
+        <th>Puzzle</th><th>Storm</th>
+      </tr></thead>
+      <tbody>${history.map(h=>`<tr>
+        <td class="td-dim">${fd(h.fetchedAt)}</td><td class="td-user">${h.username}</td>
+        <td class="td-dim">${h.online?'Online':fSeen(h.seenAt)}</td>
+        <td class="td-rapid">${h.rapid?.rating||0}</td><td>${h.rapid?.games||0}</td><td class="td-dim">${h.rapid?.win||0}/${h.rapid?.loss||0}/${h.rapid?.draw||0}</td>
+        <td class="td-blitz">${h.blitz?.rating||0}</td><td>${h.blitz?.games||0}</td><td class="td-dim">${h.blitz?.win||0}/${h.blitz?.loss||0}/${h.blitz?.draw||0}</td>
+        <td class="td-bullet">${h.bullet?.rating||0}</td><td>${h.bullet?.games||0}</td><td class="td-dim">${h.bullet?.win||0}/${h.bullet?.loss||0}/${h.bullet?.draw||0}</td>
+        <td class="td-storm" style="color:#2dd4bf">${h.classical?.rating||0}</td><td>${h.classical?.games||0}</td><td class="td-dim">${h.classical?.win||0}/${h.classical?.loss||0}/${h.classical?.draw||0}</td>
+        <td class="td-puzzle">${h.puzzle?.rating||0}</td>
+        <td class="td-storm">${h.storm?.score||0} <span class="td-dim">(${h.storm?.runs||0})</span></td>
+      </tr>`).join('')}</tbody></table></div>`;
+  }
+}
+
+function mini(l,d,c){return`<div class="mini" style="border-left-color:${c}"><div class="mini-lbl">${l}</div><div class="mini-val" style="color:${c}">${d?.rating||0}</div><div class="mini-detail">${d?.games||0} ván · ${d?.win||0}W/${d?.loss||0}L/${d?.draw||0}D</div></div>`;}
+function miniP(l,v,detail,c){return`<div class="mini" style="border-left-color:${c}"><div class="mini-lbl">${l}</div><div class="mini-val" style="color:${c}">${v||0}</div><div class="mini-detail">${detail}</div></div>`;}
+function removeEntry(i){history.splice(i,1);saveHistory();renderHistory();}
+function clearAll(){if(!confirm('Xóa toàn bộ lịch sử?'))return;history=[];saveHistory();renderHistory();}
+
+function exportCSV(){
+  if(!history.length)return;
+  const h=['Thời gian','Username','Online gần nhất','Rapid Elo','Rapid Ván','Rapid W','Rapid L','Rapid D','Blitz Elo','Blitz Ván','Blitz W','Blitz L','Blitz D','Bullet Elo','Bullet Ván','Bullet W','Bullet L','Bullet D','Classical Elo','Classical Ván','Classical W','Classical L','Classical D','Puzzle Elo','Puzzle Ván','Storm Max','Storm Lần'];
+  const rows=history.map(x=>[new Date(x.fetchedAt).toLocaleString('vi-VN'),x.username,x.seenAt?new Date(x.seenAt).toLocaleString('vi-VN'):'',x.rapid?.rating,x.rapid?.games,x.rapid?.win,x.rapid?.loss,x.rapid?.draw,x.blitz?.rating,x.blitz?.games,x.blitz?.win,x.blitz?.loss,x.blitz?.draw,x.bullet?.rating,x.bullet?.games,x.bullet?.win,x.bullet?.loss,x.bullet?.draw,x.classical?.rating,x.classical?.games,x.classical?.win,x.classical?.loss,x.classical?.draw,x.puzzle?.rating,x.puzzle?.games,x.storm?.score,x.storm?.runs]);
+  const csv='\uFEFF'+[h,...rows].map(r=>r.join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
+  a.download=`lichess_bluehorse_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+</script>
+</body>
+</html>
